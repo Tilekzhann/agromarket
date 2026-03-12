@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { db } from '@/lib/firebase/config';
+import { db } from '/lib/firebase/config';
 import { collection, query, orderBy, limit, startAfter, getDocs, where } from 'firebase/firestore';
 import { 
   FiClock, 
