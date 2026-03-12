@@ -2,7 +2,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { db } from '@/lib/firebase/config';
+import { db } from '/lib/firebase/config';
 import { collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
 import ProductCard from '@/components/products/ProductCard';
 import { FiArrowRight, FiTruck, FiShield, FiClock } from 'react-icons/fi';
