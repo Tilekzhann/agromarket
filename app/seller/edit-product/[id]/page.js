@@ -1,5 +1,3 @@
-'use client'
-
 // app/seller/edit-product/[id]/page.js
 'use client';
 import { useState, useEffect } from 'react';
@@ -12,10 +10,14 @@ import {
   FiUpload, 
   FiX, 
   FiPlus, 
-  FiPackage,
   FiSave,
   FiTrash2,
-  FiAlertCircle
+  FiAlertCircle,
+  FiPackage,
+  FiTag,
+  FiDollarSign,
+  FiBox,
+  FiCheckCircle
 } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
@@ -52,7 +54,6 @@ export default function EditProductPage() {
   const [specKey, setSpecKey] = useState('');
   const [specValue, setSpecValue] = useState('');
 
-  // Загрузка данных товара
   useEffect(() => {
     async function fetchProduct() {
       if (!productId) return;
@@ -69,7 +70,6 @@ export default function EditProductPage() {
 
         const productData = productSnap.data();
 
-        // Проверка прав
         if (productData.sellerId !== session?.user?.id && session?.user?.role !== 'admin') {
           toast.error('У вас нет прав для редактирования этого товара');
           router.push('/seller');
@@ -152,11 +152,8 @@ export default function EditProductPage() {
   const removeExistingImage = async (index) => {
     try {
       const imageUrl = images[index];
-      
-      // Удаляем из Storage
       const imageRef = ref(storage, imageUrl);
-      await deleteObject(imageRef).catch(() => {}); // Игнорируем ошибку если файл не найден
-
+      await deleteObject(imageRef).catch(() => {});
       setImages(prev => prev.filter((_, i) => i !== index));
       toast.success('Изображение удалено');
     } catch (error) {
@@ -172,10 +169,8 @@ export default function EditProductPage() {
   const removeExistingCertificate = async (index) => {
     try {
       const certUrl = certificates[index];
-      
       const certRef = ref(storage, certUrl);
       await deleteObject(certRef).catch(() => {});
-
       setCertificates(prev => prev.filter((_, i) => i !== index));
       toast.success('Сертификат удален');
     } catch (error) {
@@ -213,7 +208,6 @@ export default function EditProductPage() {
     setSaving(true);
 
     try {
-      // Загружаем новые изображения
       const newImageUrls = await Promise.all(
         newImageFiles.map(async (file) => {
           const storageRef = ref(storage, `products/${Date.now()}_${file.name}`);
@@ -222,7 +216,6 @@ export default function EditProductPage() {
         })
       );
 
-      // Загружаем новые сертификаты
       const newCertificateUrls = await Promise.all(
         newCertificateFiles.map(async (file) => {
           const storageRef = ref(storage, `certificates/${Date.now()}_${file.name}`);
@@ -231,7 +224,6 @@ export default function EditProductPage() {
         })
       );
 
-      // Обновляем товар
       const productRef = doc(db, 'products', productId);
       await updateDoc(productRef, {
         ...formData,
@@ -257,7 +249,6 @@ export default function EditProductPage() {
 
   const handleDeleteProduct = async () => {
     try {
-      // Удаляем изображения из Storage
       for (const imageUrl of images) {
         try {
           const imageRef = ref(storage, imageUrl);
@@ -267,7 +258,6 @@ export default function EditProductPage() {
         }
       }
 
-      // Удаляем сертификаты из Storage
       for (const certUrl of certificates) {
         try {
           const certRef = ref(storage, certUrl);
@@ -277,9 +267,7 @@ export default function EditProductPage() {
         }
       }
 
-      // Удаляем документ из Firestore
       await deleteDoc(doc(db, 'products', productId));
-
       toast.success('Товар удален');
       router.push('/seller');
       
@@ -291,120 +279,135 @@ export default function EditProductPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
+      <div className="edit-product-loading">
+        <div className="spinner"></div>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
-      {/* Заголовок */}
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">Редактирование товара</h1>
+    <div className="edit-product-page">
+      {/* Заголовок с кнопкой удаления */}
+      <div className="edit-product-header">
+        <h1 className="edit-product-title">
+          <FiPackage className="title-icon" />
+          Редактирование товара
+        </h1>
         <button
           onClick={() => setShowDeleteModal(true)}
-          className="flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
+          className="delete-button"
         >
-          <FiTrash2 className="mr-2" />
-          Удалить товар
+          <FiTrash2 />
+          <span>Удалить товар</span>
         </button>
       </div>
 
-      <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-md p-6 space-y-6">
+      {/* Форма */}
+      <form onSubmit={handleSubmit} className="edit-product-form">
         {/* Основная информация */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Название товара *
-            </label>
-            <input
-              type="text"
-              name="name"
-              value={formData.name}
-              onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-              required
-            />
-          </div>
+        <div className="form-section">
+          <h2 className="section-title">Основная информация</h2>
+          <div className="form-grid">
+            <div className="form-field">
+              <label className="field-label required">
+                <FiTag className="label-icon" />
+                Название товара
+              </label>
+              <input
+                type="text"
+                name="name"
+                value={formData.name}
+                onChange={handleInputChange}
+                className="field-input"
+                placeholder="Например: Яблоки свежие"
+                required
+              />
+            </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Категория *
-            </label>
-            <input
-              type="text"
-              name="category"
-              value={formData.category}
-              onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-              required
-            />
-          </div>
+            <div className="form-field">
+              <label className="field-label required">
+                <FiBox className="label-icon" />
+                Категория
+              </label>
+              <input
+                type="text"
+                name="category"
+                value={formData.category}
+                onChange={handleInputChange}
+                className="field-input"
+                placeholder="Выберите категорию"
+                required
+              />
+            </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Цена (тенге) *
-            </label>
-            <input
-              type="number"
-              name="price"
-              value={formData.price}
-              onChange={handleInputChange}
-              min="0"
-              step="0.01"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-              required
-            />
-          </div>
+            <div className="form-field">
+              <label className="field-label required">
+                <FiDollarSign className="label-icon" />
+                Цена (₸)
+              </label>
+              <input
+                type="number"
+                name="price"
+                value={formData.price}
+                onChange={handleInputChange}
+                min="0"
+                step="0.01"
+                className="field-input"
+                placeholder="0.00"
+                required
+              />
+            </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Количество на складе
-            </label>
-            <input
-              type="number"
-              name="stock"
-              value={formData.stock}
-              onChange={handleInputChange}
-              min="0"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-            />
+            <div className="form-field">
+              <label className="field-label">
+                <FiBox className="label-icon" />
+                Количество на складе
+              </label>
+              <input
+                type="number"
+                name="stock"
+                value={formData.stock}
+                onChange={handleInputChange}
+                min="0"
+                className="field-input"
+                placeholder="0"
+              />
+            </div>
           </div>
         </div>
 
         {/* Описание */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Краткое описание
-          </label>
-          <textarea
-            name="description"
-            value={formData.description}
-            onChange={handleInputChange}
-            rows="3"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-          />
+        <div className="form-section">
+          <h2 className="section-title">Описание</h2>
+          <div className="form-field full-width">
+            <label className="field-label">Краткое описание</label>
+            <textarea
+              name="description"
+              value={formData.description}
+              onChange={handleInputChange}
+              rows="3"
+              className="field-textarea"
+              placeholder="Краткое описание товара..."
+            />
+          </div>
         </div>
 
         {/* Изображения */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Изображения
-          </label>
+        <div className="form-section">
+          <h2 className="section-title">Изображения</h2>
           
           {/* Существующие изображения */}
           {images.length > 0 && (
-            <div className="grid grid-cols-3 md:grid-cols-5 gap-4 mb-4">
+            <div className="images-grid">
               {images.map((url, index) => (
-                <div key={index} className="relative group">
-                  <img src={url} alt={`Product ${index + 1}`} className="w-full h-24 object-cover rounded-lg" />
+                <div key={index} className="image-card">
+                  <img src={url} alt={`Product ${index + 1}`} className="image-preview" />
                   <button
                     type="button"
                     onClick={() => removeExistingImage(index)}
-                    className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition"
+                    className="image-remove"
                   >
-                    <FiX className="h-3 w-3" />
+                    <FiX />
                   </button>
                 </div>
               ))}
@@ -412,7 +415,7 @@ export default function EditProductPage() {
           )}
 
           {/* Загрузка новых изображений */}
-          <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
+          <div className="upload-area">
             <input
               type="file"
               accept="image/*"
@@ -421,31 +424,29 @@ export default function EditProductPage() {
               className="hidden"
               id="image-upload"
             />
-            <label
-              htmlFor="image-upload"
-              className="cursor-pointer flex flex-col items-center"
-            >
-              <FiUpload className="h-8 w-8 text-gray-400 mb-2" />
-              <span className="text-sm text-gray-600">Добавить новые фото</span>
+            <label htmlFor="image-upload" className="upload-label">
+              <FiUpload className="upload-icon" />
+              <span className="upload-text">Добавить новые фото</span>
+              <span className="upload-hint">PNG, JPG до 5MB</span>
             </label>
           </div>
 
           {/* Превью новых изображений */}
           {newImageFiles.length > 0 && (
-            <div className="grid grid-cols-3 md:grid-cols-5 gap-4 mt-4">
+            <div className="images-grid">
               {newImageFiles.map((file, index) => (
-                <div key={index} className="relative group">
+                <div key={index} className="image-card">
                   <img
                     src={URL.createObjectURL(file)}
                     alt={`New ${index + 1}`}
-                    className="w-full h-24 object-cover rounded-lg"
+                    className="image-preview"
                   />
                   <button
                     type="button"
                     onClick={() => removeNewImage(index)}
-                    className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full"
+                    className="image-remove"
                   >
-                    <FiX className="h-3 w-3" />
+                    <FiX />
                   </button>
                 </div>
               ))}
@@ -454,45 +455,45 @@ export default function EditProductPage() {
         </div>
 
         {/* Характеристики */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Характеристики
-          </label>
+        <div className="form-section">
+          <h2 className="section-title">Характеристики</h2>
           
           {/* Существующие характеристики */}
-          {Object.entries(formData.specifications).map(([key, value]) => (
-            <div key={key} className="flex items-center space-x-2 mb-2">
-              <span className="flex-1 px-3 py-2 bg-gray-50 rounded-lg">{key}: {value}</span>
-              <button
-                type="button"
-                onClick={() => removeSpecification(key)}
-                className="p-2 text-red-500 hover:bg-red-50 rounded"
-              >
-                <FiX />
-              </button>
-            </div>
-          ))}
+          <div className="specs-list">
+            {Object.entries(formData.specifications).map(([key, value]) => (
+              <div key={key} className="spec-item">
+                <span className="spec-text">{key}: {value}</span>
+                <button
+                  type="button"
+                  onClick={() => removeSpecification(key)}
+                  className="spec-remove"
+                >
+                  <FiX />
+                </button>
+              </div>
+            ))}
+          </div>
 
           {/* Добавление новой характеристики */}
-          <div className="flex space-x-2">
+          <div className="spec-add-form">
             <input
               type="text"
               value={specKey}
               onChange={(e) => setSpecKey(e.target.value)}
-              placeholder="Название"
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+              placeholder="Название характеристики"
+              className="spec-input"
             />
             <input
               type="text"
               value={specValue}
               onChange={(e) => setSpecValue(e.target.value)}
               placeholder="Значение"
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="spec-input"
             />
             <button
               type="button"
               onClick={addSpecification}
-              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+              className="spec-add-button"
             >
               <FiPlus />
             </button>
@@ -500,70 +501,74 @@ export default function EditProductPage() {
         </div>
 
         {/* Статус */}
-        <div className="flex items-center">
-          <input
-            type="checkbox"
-            name="isActive"
-            checked={formData.isActive}
-            onChange={handleInputChange}
-            className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
-          />
-          <label className="ml-2 text-sm text-gray-700">
-            Товар активен (отображается в каталоге)
+        <div className="form-section">
+          <label className="status-toggle">
+            <input
+              type="checkbox"
+              name="isActive"
+              checked={formData.isActive}
+              onChange={handleInputChange}
+              className="status-checkbox"
+            />
+            <span className="status-track">
+              <span className="status-thumb"></span>
+            </span>
+            <span className="status-label">
+              {formData.isActive ? 'Товар активен' : 'Товар скрыт'}
+            </span>
           </label>
         </div>
 
         {/* Кнопки */}
-        <div className="flex justify-end space-x-3 pt-4 border-t">
-          <Link
-            href="/seller"
-            className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
-          >
+        <div className="form-actions">
+          <Link href="/seller" className="cancel-button">
             Отмена
           </Link>
           <button
             type="submit"
             disabled={saving}
-            className="flex items-center px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition disabled:opacity-50"
+            className="save-button"
           >
             {saving ? (
-              <>
-                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
+              <span className="button-content">
+                <span className="spinner small"></span>
                 Сохранение...
-              </>
+              </span>
             ) : (
-              <>
-                <FiSave className="mr-2" />
+              <span className="button-content">
+                <FiSave className="button-icon" />
                 Сохранить изменения
-              </>
+              </span>
             )}
           </button>
         </div>
       </form>
 
-      {/* Модальное окно подтверждения удаления */}
+      {/* Модальное окно удаления */}
       {showDeleteModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full">
-            <h3 className="text-lg font-bold mb-4">Удаление товара</h3>
-            <p className="text-gray-600 mb-6">
-              Вы уверены, что хотите удалить товар "{formData.name}"? Это действие нельзя отменить.
+        <div className="modal-overlay" onClick={() => setShowDeleteModal(false)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <FiAlertCircle className="modal-icon warning" />
+              <h3 className="modal-title">Удаление товара</h3>
+            </div>
+            <p className="modal-text">
+              Вы уверены, что хотите удалить товар <strong>«{formData.name}»</strong>? 
+              Это действие нельзя отменить.
             </p>
-            <div className="flex justify-end space-x-3">
+            <div className="modal-actions">
               <button
                 onClick={() => setShowDeleteModal(false)}
-                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
+                className="modal-cancel"
               >
                 Отмена
               </button>
               <button
                 onClick={handleDeleteProduct}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
+                className="modal-confirm-delete"
               >
-                Удалить
+                <FiTrash2 className="button-icon" />
+                Удалить навсегда
               </button>
             </div>
           </div>
