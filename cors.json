@@ -1,6 +1,6 @@
 [
   {
-    "origin": ["http://localhost:3000", "https://agromarket-jade.vercel.app"],
+    "origin": ["http://localhost:3000", "https://agromarket-aib.vercel.app"],
     "method": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     "responseHeader": ["Content-Type", "Authorization", "Content-Length", "X-Requested-With"],
     "maxAgeSeconds": 3600
