@@ -171,37 +171,37 @@ export default function ProductDetailPage() {
       </nav>
 
       <div className="product-grid">
-        {/* Левая колонка - изображения */}
-        <div className="product-gallery">
-          <div className="product-main-image">
-            {product.images && product.images.length > 0 ? (
-              <img
-                src={product.images[selectedImage]}
-                alt={product.name}
-                className="product-image"
-              />
-            ) : (
-              <div className="product-image-placeholder">
-                <span className="text-tertiary">Нет изображения</span>
-              </div>
-            )}
-          </div>
+       {/* Левая колонка - изображения */}
+<div className="product-gallery">
+  <div className="product-main-image">
+    {product.images && product.images.length > 0 ? (
+      <img
+        src={product.images[selectedImage]}
+        alt={product.name}
+        className="product-image"
+        style={{ objectFit: 'contain' }}
+      />
+    ) : (
+      <div className="product-image-placeholder">
+        <span>📦 Нет изображения</span>
+      </div>
+    )}
+  </div>
 
-          {product.images && product.images.length > 1 && (
-            <div className="product-thumbnails">
-              {product.images.map((image, index) => (
-                <button
-                  key={index}
-                  onClick={() => setSelectedImage(index)}
-                  className={`product-thumbnail ${selectedImage === index ? 'active' : ''}`}
-                >
-                  <img src={image} alt={`${product.name} ${index + 1}`} className="thumbnail-image" />
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
+  {product.images && product.images.length > 1 && (
+    <div className="product-thumbnails">
+      {product.images.map((image, index) => (
+        <button
+          key={index}
+          onClick={() => setSelectedImage(index)}
+          className={`product-thumbnail ${selectedImage === index ? 'active' : ''}`}
+        >
+          <img src={image} alt={`${product.name} ${index + 1}`} className="thumbnail-image" />
+        </button>
+      ))}
+    </div>
+  )}
+</div>
         {/* Правая колонка - информация */}
         <div className="product-info">
           <div className="product-header">
