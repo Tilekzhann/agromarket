@@ -4,14 +4,14 @@ import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { signIn, useSession } from 'next-auth/react';
-import { FiMail, FiLock, FiAlertCircle } from 'react-icons/fi';
+import { FiMail, FiLock, FiAlertCircle, FiX } from 'react-icons/fi';
 import { auth } from '@/lib/firebase/config';
 import { sendPasswordResetEmail } from 'firebase/auth';
 import toast from 'react-hot-toast';
 
 export default function LoginContent() {
   const router = useRouter();
-  const searchParams = useSearchParams(); // 👈 ХУК ТЕПЕРЬ ЗДЕСЬ
+  const searchParams = useSearchParams();
   const { data: session, status } = useSession();
   
   const [form, setForm] = useState({
@@ -19,6 +19,7 @@ export default function LoginContent() {
     password: '',
   });
   const [loading, setLoading] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
   const [error, setError] = useState('');
   const [resetEmail, setResetEmail] = useState('');
   const [showResetModal, setShowResetModal] = useState(false);
@@ -79,7 +80,6 @@ export default function LoginContent() {
       } else {
         console.log('✅ Успешный вход');
         toast.success('Успешный вход!');
-        // Перенаправление произойдет через useEffect
       }
     } catch (error) {
       console.error('🔥 Критическая ошибка:', error);
@@ -102,18 +102,44 @@ export default function LoginContent() {
 
   const handlePasswordReset = async (e) => {
     e.preventDefault();
+    
     if (!resetEmail) {
       toast.error('Введите email');
       return;
     }
 
+    setResetLoading(true);
+
     try {
+      console.log('📧 Отправка запроса на сброс пароля для:', resetEmail);
+      
       await sendPasswordResetEmail(auth, resetEmail);
+      
+      console.log('✅ Email для сброса пароля отправлен');
       toast.success('Инструкция по сбросу пароля отправлена на email');
+      
       setShowResetModal(false);
       setResetEmail('');
+      
     } catch (error) {
-      toast.error('Ошибка при отправке инструкции');
+      console.error('❌ Ошибка сброса пароля:', error);
+      
+      // Обработка конкретных ошибок Firebase
+      switch (error.code) {
+        case 'auth/user-not-found':
+          toast.error('Пользователь с таким email не найден');
+          break;
+        case 'auth/invalid-email':
+          toast.error('Неверный формат email');
+          break;
+        case 'auth/too-many-requests':
+          toast.error('Слишком много попыток. Попробуйте позже');
+          break;
+        default:
+          toast.error('Ошибка при отправке инструкции');
+      }
+    } finally {
+      setResetLoading(false);
     }
   };
 
@@ -189,7 +215,7 @@ export default function LoginContent() {
 
           {/* Запомнить меня и забыли пароль */}
           <div className="flex items-center justify-between mb-4">
-            <label className="flex items-center">
+            <label className="flex items-center cursor-pointer">
               <input
                 type="checkbox"
                 className="form-checkbox"
@@ -201,7 +227,7 @@ export default function LoginContent() {
             <button
               type="button"
               onClick={() => setShowResetModal(true)}
-              className="text-sm text-green-600 hover:text-green-700"
+              className="text-sm text-green-600 hover:text-green-700 transition-colors"
             >
               Забыли пароль?
             </button>
@@ -215,7 +241,7 @@ export default function LoginContent() {
           >
             {loading ? (
               <span className="btn-content">
-                <span className="spinner" />
+                <span className="spinner"></span>
                 Вход...
               </span>
             ) : (
@@ -264,37 +290,53 @@ export default function LoginContent() {
 
         {/* Модальное окно сброса пароля */}
         {showResetModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-              <h3 className="text-lg font-semibold mb-4">Сброс пароля</h3>
-              <p className="text-sm text-gray-600 mb-4">
+          <div className="modal-overlay" onClick={() => setShowResetModal(false)}>
+            <div className="modal-content" onClick={e => e.stopPropagation()}>
+              <button 
+                onClick={() => setShowResetModal(false)}
+                className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <FiX size={20} />
+              </button>
+
+              <h3 className="modal-title">Сброс пароля</h3>
+              <p className="modal-description">
                 Введите ваш email, мы отправим инструкцию по сбросу пароля
               </p>
+
               <form onSubmit={handlePasswordReset}>
-                <div className="form-group">
-                  <input
-                    type="email"
-                    placeholder="your@email.com"
-                    className="form-input"
-                    style={{ paddingLeft: '1rem' }}
-                    value={resetEmail}
-                    onChange={(e) => setResetEmail(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="button-group">
+                <input
+                  type="email"
+                  placeholder="your@email.com"
+                  className="modal-input"
+                  value={resetEmail}
+                  onChange={(e) => setResetEmail(e.target.value)}
+                  required
+                  disabled={resetLoading}
+                />
+
+                <div className="modal-actions">
                   <button
                     type="button"
                     onClick={() => setShowResetModal(false)}
-                    className="btn btn-secondary"
+                    className="modal-btn modal-btn-secondary"
+                    disabled={resetLoading}
                   >
                     Отмена
                   </button>
                   <button
                     type="submit"
-                    className="btn btn-primary"
+                    className="modal-btn modal-btn-primary"
+                    disabled={resetLoading}
                   >
-                    Отправить
+                    {resetLoading ? (
+                      <span className="flex items-center gap-2">
+                        <span className="spinner small"></span>
+                        Отправка...
+                      </span>
+                    ) : (
+                      'Отправить'
+                    )}
                   </button>
                 </div>
               </form>
