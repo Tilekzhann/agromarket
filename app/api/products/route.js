@@ -16,7 +16,7 @@ import {
   serverTimestamp 
 } from 'firebase/firestore';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { authOptions } from '@/lib/firebase/auth';
 
 // GET /api/products - получение списка товаров с фильтрацией
 export async function GET(request) {
