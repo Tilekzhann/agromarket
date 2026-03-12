@@ -187,7 +187,7 @@ export default function RegisterPage() {
                     type="text"
                     required
                     className="form-input"
-                    placeholder={form.role === 'seller' ? 'ИП Иванов Иван' : 'Иван Иванов'}
+                    placeholder={form.role === 'seller' ? 'ИП Баспаков Айбар' : 'Айбар Баспаков'}
                     value={form.name}
                     onChange={handleChange}
                   />
